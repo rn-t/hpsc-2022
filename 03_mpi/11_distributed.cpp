@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   int size, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  Body ibody[N/size], jbody[N/size];
+  Body ibody[N/size], jbody[N/size], bufferbody[N/size];
   srand48(rank);
   for(int i=0; i<N/size; i++) {
     ibody[i].x = jbody[i].x = drand48();
@@ -26,9 +26,23 @@ int main(int argc, char** argv) {
   MPI_Datatype MPI_BODY;
   MPI_Type_contiguous(5, MPI_DOUBLE, &MPI_BODY);
   MPI_Type_commit(&MPI_BODY);
+  MPI_Win win;
+  MPI_Win_create(jbody, N*sizeof(Body)/size, sizeof(Body), MPI_INFO_NULL, MPI_COMM_WORLD, &win);
+  
   for(int irank=0; irank<size; irank++) {
-    MPI_Send(jbody, N/size, MPI_BODY, send_to, 0, MPI_COMM_WORLD);
-    MPI_Recv(jbody, N/size, MPI_BODY, recv_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    //copy jbody to bufferbody
+    for(int i=0; i<N/size; i++){
+      bufferbody[i].x = jbody[i].x;
+      bufferbody[i].y = jbody[i].y;
+      bufferbody[i].m = jbody[i].m;
+      bufferbody[i].fx = jbody[i].fx;
+      bufferbody[i].fy = jbody[i].fy;
+    } 
+    MPI_Win_fence(0, win);
+    MPI_Put(bufferbody, N/size, MPI_BODY, send_to, 0, N/size, MPI_BODY, win);
+    MPI_Win_fence(0, win);
+    //MPI_Send(jbody, N/size, MPI_BODY, send_to, 0, MPI_COMM_WORLD);
+    //MPI_Recv(jbody, N/size, MPI_BODY, recv_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     for(int i=0; i<N/size; i++) {
       for(int j=0; j<N/size; j++) {
         double rx = ibody[i].x - jbody[j].x;
