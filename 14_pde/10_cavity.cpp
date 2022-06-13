@@ -52,10 +52,6 @@ int main(int argc, char **argv){
                         pow(((u[j][i+1] - u[j][i-1]) / (2 * dx)),2) - 2 * ((u[j+1][i] - u[j-1][i]) / (2 * dy) *
                          (v[j][i+1] -v[j][i-1]) / (2 * dx)) - pow(((v[j+1][i] - v[j-1][i]) / (2 * dy)), 2));
             }
-            if(j == 1){
-            for(int i = 1; i < nx-1; i++) cout << b[j][i] << " ";
-            cout << "\n";
-            }
         }
     
         for(int it = 0; it < nit; it++){
